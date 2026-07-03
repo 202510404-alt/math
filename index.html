@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>스마트 팩토리 최적화 시뮬레이터</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; display: flex; gap: 30px; }
+        .control-panel { width: 35%; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .chart-panel { width: 60%; }
+        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        .slider-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type=range] { width: 100%; }
+        .val-display { float: right; color: #666; font-weight: normal; }
+    </style>
+</head>
+<body>
+
+<div class="control-panel">
+    <h3>🏭 인간 중심 공장 설정</h3>
+    <div class="slider-group">
+        <label>Labor Count (노동자 수): <span id="v_l_count" class="val-display">5</span>명</label>
+        <input type="range" id="l_count" min="1" max="20" value="5" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Labor Wage (1인당 연봉): <span id="v_l_wage" class="val-display">300</span>만원</label>
+        <input type="range" id="l_wage" min="100" max="600" value="300" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Labor Time (하루 근무시간): <span id="v_l_time" class="val-display">8</span>시간</label>
+        <input type="range" id="l_time" min="4" max="12" value="8" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Labor Eff (인간 작업효율): <span id="v_l_eff" class="val-display">2</span></label>
+        <input type="range" id="l_eff" min="1" max="10" value="2" oninput="updateChart()">
+    </div>
+
+    <br>
+    <h3>🤖 자동화 스마트 팩토리 설정</h3>
+    <div class="slider-group">
+        <label>Auto Cost (로봇 초기투자비): <span id="v_a_cost" class="val-display">5000</span>만원</label>
+        <input type="range" id="a_cost" min="1000" max="15000" value="5000" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Auto Power (로봇 연간유지비): <span id="v_a_power" class="val-display">200</span>만원</label>
+        <input type="range" id="a_power" min="50" max="1000" value="200" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Auto Time (로봇 가동시간): <span id="v_a_time" class="val-display">20</span>시간</label>
+        <input type="range" id="a_time" min="12" max="24" value="20" oninput="updateChart()">
+    </div>
+    <div class="slider-group">
+        <label>Auto Eff (기계 작업효율): <span id="v_a_eff" class="val-display">5</span></label>
+        <input type="range" id="a_eff" min="2" max="20" value="5" oninput="updateChart()">
+    </div>
+</div>
+
+<div class="chart-panel">
+    <h2>Smart Factory Optimization (Labor vs Automation)</h2>
+    <canvas id="factoryChart" width="800" height="500"></canvas>
+</div>
+
+<script>
+    const YEARS = 10;
+    const ctx = document.getElementById('factoryChart').getContext('2d');
+    
+    // 차트 생성 기본 구조
+    let factoryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: YEARS}, (_, i) => `${i + 1}년차`),
+            datasets: [
+                { label: 'Labor-Centered Factory (인간 중심 공장 - 등차수열)', borderColor: 'red', data: [], fill: false, tension: 0.1 },
+                { label: 'Automated Smart Factory (자동화 스마트 팩토리 - 등차수열)', borderColor: 'blue', data: [], fill: false, tension: 0.1 }
+            ]
+        },
+        options: { responsive: true, scales: { y: { title: { display: true, text: '누적 순이익 (만원)' } } } }
+    });
+
+    function updateChart() {
+        // 슬라이더 값 가져오기 및 화면 텍스트 업데이트
+        const l_count = parseInt(document.getElementById('l_count').value); document.getElementById('v_l_count').innerText = l_count;
+        const l_wage = parseInt(document.getElementById('l_wage').value); document.getElementById('v_l_wage').innerText = l_wage;
+        const l_time = parseInt(document.getElementById('l_time').value); document.getElementById('v_l_time').innerText = l_time;
+        const l_eff = parseInt(document.getElementById('l_eff').value); document.getElementById('v_l_eff').innerText = l_eff;
+        
+        const a_cost = parseInt(document.getElementById('a_cost').value); document.getElementById('v_a_cost').innerText = a_cost;
+        const a_power = parseInt(document.getElementById('a_power').value); document.getElementById('v_a_power').innerText = a_power;
+        const a_time = parseInt(document.getElementById('a_time').value); document.getElementById('v_a_time').innerText = a_time;
+        const a_eff = parseInt(document.getElementById('a_eff').value); document.getElementById('v_a_eff').innerText = a_eff;
+
+        // 누적 등차수열 합 계산
+        let labor_years = [];
+        let auto_years = [];
+        
+        let labor_annual_profit = (l_count * l_time * l_eff * 100) - (l_count * l_wage);
+        let auto_annual_profit = (a_time * a_eff * 100) - a_power;
+
+        for (let i = 0; i < YEARS; i++) {
+            if (i === 0) {
+                labor_years.push(labor_annual_profit);
+                auto_years.push((auto_annual_profit * 0.3) - a_cost);
+            } else {
+                labor_years.push(labor_years[i - 1] + labor_annual_profit);
+                auto_years.push(auto_years[i - 1] + auto_annual_profit);
+            }
+        }
+
+        // 그래프 갱신
+        factoryChart.data.datasets[0].data = labor_years;
+        factoryChart.data.datasets[1].data = auto_years;
+        factoryChart.update();
+    }
+
+    // 첫 실행
+    updateChart();
+</script>
+
+</body>
+</html>
