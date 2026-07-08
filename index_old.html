@@ -7,8 +7,13 @@
     
     <script>
         window.MathJax = {
-            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-            svg: { fontCache: 'global' }
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$','$$'], ['\\[','\\]']]
+            },
+            chtml: {
+                scale: 1.15
+            }
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
@@ -114,17 +119,14 @@
             gap: 6px;
         }
         /* [수정 2] 수식 박스 크기 및 줄바꿈 여백 조정 (MathJax 전용) */
-        .formula-box {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            text-align: center;
-            font-size: 22px;
-            color: #0f172a;
-            margin-bottom: 10px;
-            min-height: 50px;
+        .formula-box{
+            background:#fff;
+            padding:20px;
+            border-radius:8px;
+            border:1px solid #e2e8f0;
+            overflow-x:auto;
         }
+                
         .formula-desc {
             font-size: 13px;
             color: #475569;
@@ -237,62 +239,192 @@
     }
 
     function updateChart() {
-        const scale = parseInt(document.getElementById('scale').value); document.getElementById('v_scale').innerText = scale;
-        const auto_rate = parseInt(document.getElementById('auto_rate').value); document.getElementById('v_auto_rate').innerText = auto_rate;
-        const l_count = parseInt(document.getElementById('l_count').value); document.getElementById('v_l_count').innerText = l_count;
 
-        let initialCost = (REAL_DATA.baseCost * scale) + (auto_rate * 600 * scale);
+        // ============================
+        // 슬라이더 값 읽기
+        // ============================
+        const scale = parseInt(document.getElementById("scale").value);
+        const auto_rate = parseInt(document.getElementById("auto_rate").value);
+        const l_count = parseInt(document.getElementById("l_count").value);
 
-        let totalLaborEff = calculateLaborDiminishingReturns(l_count, REAL_DATA.laborEff, REAL_DATA.r);
-        let totalAutoEff = (auto_rate / 100) * REAL_DATA.autoEff * scale * 10;
-        let annualRevenue = totalLaborEff + totalAutoEff;
+        document.getElementById("v_scale").innerText = scale;
+        document.getElementById("v_auto_rate").innerText = auto_rate;
+        document.getElementById("v_l_count").innerText = l_count;
 
-        // [수정 3] 정식 LaTeX 문법을 활용하여 시그마 위아래에 숫자가 딱 맞게 들어가도록 동적 매핑
-        const formulaElement = document.getElementById('formula_display');
-        formulaElement.innerHTML = `$$ \\text{Total Labor Efficiency} = \\sum_{i=1}^{${l_count}} 450 \\times 0.88^{i-1} $$`;
-        
-        // 슬라이더를 움직일 때마다 MathJax에게 수식을 다시 그리라고 명령하는 트리거 (동적 갱신 필수)
-        if (window.MathJax && window.MathJax.typesetPromise) {
+
+        // ============================
+        // 초기 투자비(CAPEX)
+        // ============================
+        const buildingCost = REAL_DATA.baseCost * scale;
+        const automationCost = auto_rate * 600 * scale;
+        const initialCost = buildingCost + automationCost;
+
+
+        // ============================
+        // 생산성 계산
+        // ============================
+        const totalLaborEff =
+            calculateLaborDiminishingReturns(
+                l_count,
+                REAL_DATA.laborEff,
+                REAL_DATA.r
+            );
+
+        const totalAutoEff =
+            (auto_rate / 100)
+            * REAL_DATA.autoEff
+            * scale;
+
+        // 하루 주문 처리량
+        const dailyOrders =
+            totalLaborEff
+            + totalAutoEff;
+
+
+        // ============================
+        // 매출 계산
+        // ============================
+
+        // 연간 운영일수
+        const operatingDays = 300;
+
+        // 주문당 평균 순매출(만원)
+        // 0.35 = 3,500원
+        const profitPerOrder = 0.35;
+
+        const annualRevenue =
+            dailyOrders
+            * operatingDays
+            * profitPerOrder;
+
+
+        // ============================
+        // 운영비 계산
+        // ============================
+
+        const laborCost =
+            l_count
+            * REAL_DATA.laborWage;
+
+        const maintenanceCost =
+            auto_rate
+            * 25
+            * scale;
+
+        const facilityCost =
+            scale
+            * 2500;
+
+        const annualExpense =
+            laborCost
+            + maintenanceCost
+            + facilityCost;
+
+
+        // ============================
+        // 연간 순이익
+        // ============================
+
+        const annualNetProfit =
+            annualRevenue
+            - annualExpense;
+
+
+        // ============================
+        // 수식 표시
+        // ============================
+
+        const formulaElement =
+            document.getElementById("formula_display");
+
+        formulaElement.innerHTML =
+    `$$
+    \\text{Total Labor Efficiency}
+    =
+    \\sum_{i=1}^{${l_count}}
+    450
+    \\times
+    0.88^{i-1}
+    $$`;
+
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetClear([formulaElement]);
             MathJax.typesetPromise([formulaElement]);
         }
 
-        document.getElementById('f_count').innerText = l_count;
-        document.getElementById('f_result').innerText = Math.round(totalLaborEff).toLocaleString();
+        document.getElementById("f_count").innerText = l_count;
+        document.getElementById("f_result").innerText =
+            Math.round(totalLaborEff).toLocaleString();
 
-        let annualExpense = (l_count * REAL_DATA.laborWage) + ((auto_rate / 100) * 4000 * scale) + (scale * 3000);
-        let annualNetProfit = annualRevenue - annualExpense;
+
+        // ============================
+        // 10년 시뮬레이션
+        // ============================
 
         let cumulative_profits = [];
         let currentBalance = -initialCost;
         let bepYear = -1;
 
-        cumulative_profits.push(currentBalance);
+        cumulative_profits.push(Math.round(currentBalance));
 
-        for (let i = 1; i <= YEARS; i++) {
+        for (let year = 1; year <= YEARS; year++) {
+
             currentBalance += annualNetProfit;
-            cumulative_profits.push(Math.round(currentBalance));
+
+            cumulative_profits.push(
+                Math.round(currentBalance)
+            );
 
             if (currentBalance >= 0 && bepYear === -1) {
-                bepYear = i;
+                bepYear = year;
             }
         }
 
-        document.getElementById('d_init').innerText = `${initialCost.toLocaleString()}만 원`;
-        
-        const bepCard = document.getElementById('card_bep');
-        if (bepYear > 0) {
-            document.getElementById('d_bep').innerText = `${bepYear}년차`;
-            bepCard.classList.remove('alert');
+
+        // ============================
+        // Dashboard
+        // ============================
+
+        document.getElementById("d_init").innerText =
+            initialCost.toLocaleString() + "만 원";
+
+        const bepCard =
+            document.getElementById("card_bep");
+
+        if (bepYear !== -1) {
+
+            document.getElementById("d_bep").innerText =
+                bepYear + "년차";
+
+            bepCard.classList.remove("alert");
+
         } else {
-            document.getElementById('d_bep').innerText = "10년 내 회수 불가";
-            bepCard.classList.add('alert');
+
+            document.getElementById("d_bep").innerText =
+                "10년 내 회수 불가";
+
+            bepCard.classList.add("alert");
         }
 
-        let roi = (currentBalance / initialCost) * 100;
-        document.getElementById('d_roi').innerText = `${roi.toFixed(1)}%`;
-        document.getElementById('d_net').innerText = `${Math.round(currentBalance).toLocaleString()}만 원`;
+        const roi =
+            (currentBalance / initialCost)
+            * 100;
 
-        factoryChart.data.datasets[0].data = cumulative_profits;
+        document.getElementById("d_roi").innerText =
+            roi.toFixed(1) + "%";
+
+        document.getElementById("d_net").innerText =
+            Math.round(currentBalance).toLocaleString()
+            + "만 원";
+
+
+        // ============================
+        // 그래프
+        // ============================
+
+        factoryChart.data.datasets[0].data =
+            cumulative_profits;
+
         factoryChart.update();
     }
 
