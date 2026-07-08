@@ -184,16 +184,13 @@
     </div>
 
     <div class="formula-panel">
-        <div class="formula-title">🧮 생산성 최적화 수리적 모델링 (수학I 수열 연계)</div>
+        <div class="formula-title">🧮 생산성 및 비용 구조 수리적 모델링 (대수 단원 복합 연계)</div>
         <div class="formula-box" id="formula_display">
-            $$ \text{Total Labor Efficiency} = \sum_{i=1}^{10} 450 \times 0.88^{i-1} $$
-        </div>
+            </div>
         <div class="formula-desc">
-            물류 센터 내 현장 인력 증가에 따른 동선 마찰 및 병목 현상(Bottleneck)을 
-            <b>첫째항 $a = 450$</b>, <b>공비 $r = 0.88$</b>인 <span class="highlight">등비수열의 합 모델</span>로 예측하고,<br>
-            자동화 인프라 도입 단계를 <b>첫째항 $a = 450$, 공차 $d = 100$인 등차수열 모델</b>로 정립하여 복합 최적화를 추구합니다.<br>
-            현재 투입 인력 <span id="f_count" class="highlight">10</span>명 기준, 한계 체감이 반영된 총 인력 효율의 계산값은 
-            <span id="f_result" class="highlight">0</span> 유닛입니다.
+            <b>[인력 생산성]</b> 현장 인원 과다 투입 시 동선 마찰 및 한계 손실을 고려해 <b>공차가 음수인 등차수열의 합 모델</b>을 구축했습니다.<br>
+            <b>[자동화 생산성]</b> 장비 증설에 따른 한계 수용 한계를 반영해 <b>상승폭이 감쇠하는 등차수열의 합 모델</b>을 결합했습니다.<br>
+            <b>[SCM Trade-off]</b> 자동화 단계 상승 시, 실제 투입 인력의 유효 인건비가 <b>일정 비율(등비수열)로 차감</b>되는 대체 경제학 모델을 완성했습니다.
         </div>
     </div>
 </div>
@@ -203,11 +200,12 @@
     
     const REAL_DATA = {
         baseCost: 45000,
-        laborEff: 450,
-        autoFirstTerm: 450,
-        autoCommonDiff: 100,
-        laborWage: 360,
-        r: 0.88
+        laborFirstTerm: 500,     // 인력 1인 초기 생산성
+        laborCommonDiff: -15,    // 인력 증가에 따른 패널티 (음의 공차 등차수열)
+        autoFirstTerm: 600,      // 자동화 1단계 초기 효율
+        autoCommonDiff: -40,     // 자동화 고도화에 따른 한계체감 공차
+        laborWage: 360,          // 기본 인당 연봉
+        replacementRate: 0.88    // 자동화 1단계당 실질 인건비 절감 비율 (등비수열 인자)
     };
 
     const ctx = document.getElementById('factoryChart').getContext('2d');
@@ -231,12 +229,14 @@
         }
     });
 
-    function calculateLaborDiminishingReturns(n, a, r) {
-        let totalEff = 0;
+    // 등차수열의 합 계산 함수
+    function calculateArithmeticSum(n, a, d) {
+        if (n <= 0) return 0;
+        let total = 0;
         for (let i = 1; i <= n; i++) {
-            totalEff += a * Math.pow(r, i - 1);
+            total += (a + (i - 1) * d);
         }
-        return totalEff;
+        return total;
     }
 
     function updateChart() {
@@ -259,22 +259,17 @@
         const initialCost = buildingCost + automationCost;
 
         // ============================
-        // 생산성 계산 (등차 & 등비수열 복합 모델)
+        // 생산성 계산 (등차수열 기반 한계체감 모델)
         // ============================
-        const totalLaborEff = calculateLaborDiminishingReturns(
-            l_count,
-            REAL_DATA.laborEff,
-            REAL_DATA.r
-        );
+        // 1. 인력 생산성 (음의 공차 등차합)
+        const totalLaborEff = calculateArithmeticSum(l_count, REAL_DATA.laborFirstTerm, REAL_DATA.laborCommonDiff);
 
+        // 2. 자동화 생산성 (감쇠형 등차합)
         const autoStage = auto_rate === 0 ? 0 : Math.ceil(auto_rate / 10);
-        let totalAutoEff = 0;
-        if (autoStage > 0) {
-            const autoEfficiencyPerStage = REAL_DATA.autoFirstTerm + (autoStage - 1) * REAL_DATA.autoCommonDiff;
-            totalAutoEff = autoEfficiencyPerStage * scale;
-        }
+        const totalAutoEff = calculateArithmeticSum(autoStage, REAL_DATA.autoFirstTerm, REAL_DATA.autoCommonDiff) * scale;
 
-        const dailyOrders = totalLaborEff + totalAutoEff;
+        // 시스템 총 하루 주문 처리량
+        const dailyOrders = Math.max(0, totalLaborEff + totalAutoEff);
 
         // ============================
         // 매출 계산
@@ -284,9 +279,12 @@
         const annualRevenue = dailyOrders * operatingDays * profitPerOrder;
 
         // ============================
-        // 운영비 계산
+        // 운영비 계산 (자동화율에 따른 인건비 대체 - 등비 모델 융합)
         // ============================
-        const laborCost = l_count * REAL_DATA.laborWage;
+        // 자동화 단계가 높아질수록 인당 실질 인건비 부담이 등비수열 비율로 감소함
+        const effectiveWage = REAL_DATA.laborWage * Math.pow(REAL_DATA.replacementRate, autoStage);
+        const laborCost = l_count * effectiveWage;
+
         const maintenanceCost = auto_rate * 25 * scale;
         const facilityCost = scale * 2500;
         const annualExpense = laborCost + maintenanceCost + facilityCost;
@@ -297,14 +295,15 @@
         const annualNetProfit = annualRevenue - annualExpense;
 
         // ============================
-        // 수식 실시간 렌더링 (이스케이프 에러 해결 버전)
+        // 수식 실시간 렌더링 (대수 단원 복합 증명)
         // ============================
         const formulaElement = document.getElementById("formula_display");
         formulaElement.innerHTML = 
             "$$" +
             "\\begin{aligned}" +
-            "\\text{Total Labor Eff (등비수열의 합)} &= \\sum_{i=1}^{" + l_count + "} 450 \\times 0.88^{i-1} \\\\" +
-            "\\text{Total Auto Eff (등차수열 일반항)} &= \\left[ 450 + (" + autoStage + " - 1) \\times 100 \\right] \\times " + scale +
+            "\\text{Labor Eff (음의 등차합)} &= \\sum_{i=1}^{" + l_count + "} \\left[ 500 + (i - 1) \\times (-15) \\right] \\\\" +
+            "\\text{Auto Eff (감쇠형 등차합)} &= \\left( \\sum_{j=1}^{" + autoStage + "} \\left[ 600 + (j - 1) \\times (-40) \\right] \\right) \\times " + scale + " \\\\" +
+            "\\text{Effective Wage (등비수열 차감)} &= 360 \\times 0.88^{" + autoStage + "}" +
             "\\end{aligned}" +
             "$$";
 
@@ -312,9 +311,6 @@
             MathJax.typesetClear([formulaElement]);
             MathJax.typesetPromise([formulaElement]);
         }
-
-        document.getElementById("f_count").innerText = l_count;
-        document.getElementById("f_result").innerText = Math.round(totalLaborEff).toLocaleString();
 
         // ============================
         // 10년 시뮬레이션
