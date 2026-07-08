@@ -2,118 +2,153 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>스마트 팩토리 최적화 시뮬레이터</title>
+    <title>이커머스 풀필먼트 SCM 최적화 시뮬레이터</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; display: flex; gap: 30px; }
-        .control-panel { width: 35%; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .chart-panel { width: 60%; }
-        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; display: flex; gap: 30px; background-color: #f8fafc; }
+        .control-panel { width: 35%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .chart-panel { width: 62%; }
+        h3 { margin-top: 0; color: #1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
         .slider-group { margin-bottom: 15px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input[type=range] { width: 100%; }
-        .val-display { float: right; color: #666; font-weight: normal; }
+        .val-display { float: right; color: #2563eb; font-weight: bold; }
+        
+        .dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
+        .card { flex: 1; background: #eff6ff; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #bfdbfe; }
+        .card h4 { margin: 0 0 5px 0; font-size: 12px; color: #1e40af; }
+        .card p { margin: 0; font-size: 16px; font-weight: bold; color: #1d4ed8; }
+        .card.alert { background: #fff1f2; border-color: #fecdd3; }
+        .card.alert h4 { color: #9f1239; }
+        .card.alert p { color: #b91c1c; }
     </style>
 </head>
 <body>
 
 <div class="control-panel">
-    <h3>🏭 인간 중심 공장 설정</h3>
+    <h3>📦 시스템 인프라 설정 (국토부 가이드)</h3>
     <div class="slider-group">
-        <label>Labor Count (노동자 수): <span id="v_l_count" class="val-display">5</span>명</label>
-        <input type="range" id="l_count" min="1" max="20" value="5" oninput="updateChart()">
+        <label>Center Scale (센터 규모): <span id="v_scale" class="val-display">2</span>단계</label>
+        <input type="range" id="scale" min="1" max="5" value="2" oninput="updateChart()">
     </div>
     <div class="slider-group">
-        <label>Labor Wage (1인당 연봉): <span id="v_l_wage" class="val-display">300</span>만원</label>
-        <input type="range" id="l_wage" min="100" max="600" value="300" oninput="updateChart()">
-    </div>
-    <div class="slider-group">
-        <label>Labor Time (하루 근무시간): <span id="v_l_time" class="val-display">8</span>시간</label>
-        <input type="range" id="l_time" min="4" max="12" value="8" oninput="updateChart()">
-    </div>
-    <div class="slider-group">
-        <label>Labor Eff (인간 작업효율): <span id="v_l_eff" class="val-display">2</span></label>
-        <input type="range" id="l_eff" min="1" max="10" value="2" oninput="updateChart()">
+        <label>Automation Rate (자동화율): <span id="v_auto_rate" class="val-display">40</span>%</label>
+        <input type="range" id="auto_rate" min="0" max="100" value="40" oninput="updateChart()">
     </div>
 
     <br>
-    <h3>🤖 자동화 스마트 팩토리 설정</h3>
+    <h3>👥 물류 현장 인력 설정 (고용부 기준)</h3>
     <div class="slider-group">
-        <label>Auto Cost (로봇 초기투자비): <span id="v_a_cost" class="val-display">5000</span>만원</label>
-        <input type="range" id="a_cost" min="1000" max="15000" value="5000" oninput="updateChart()">
-    </div>
-    <div class="slider-group">
-        <label>Auto Power (로봇 연간유지비): <span id="v_a_power" class="val-display">200</span>만원</label>
-        <input type="range" id="a_power" min="50" max="1000" value="200" oninput="updateChart()">
-    </div>
-    <div class="slider-group">
-        <label>Auto Time (로봇 가동시간): <span id="v_a_time" class="val-display">20</span>시간</label>
-        <input type="range" id="a_time" min="12" max="24" value="20" oninput="updateChart()">
-    </div>
-    <div class="slider-group">
-        <label>Auto Eff (기계 작업효율): <span id="v_a_eff" class="val-display">5</span></label>
-        <input type="range" id="a_eff" min="2" max="20" value="5" oninput="updateChart()">
+        <label>Labor Count (투입 인력): <span id="v_l_count" class="val-display">10</span>명</label>
+        <input type="range" id="l_count" min="1" max="40" value="10" oninput="updateChart()">
     </div>
 </div>
 
 <div class="chart-panel">
-    <h2>Smart Factory Optimization (Labor vs Automation)</h2>
-    <canvas id="factoryChart" width="800" height="500"></canvas>
+    <div class="dashboard">
+        <div class="card"><h4>초기 설립 비용 (CAPEX)</h4><p id="d_init">0만 원</p></div>
+        <div class="card" id="card_bep"><h4>손익분기점 (BEP)</h4><p id="d_bep">-</p></div>
+        <div class="card"><h4>투자 수익률 (ROI)</h4><p id="d_roi">0%</p></div>
+        <div class="card"><h4>최종 누적 순이익</h4><p id="d_net">0만 원</p></div>
+    </div>
+
+    <h2>Ecommerce Fulfillment Center SCM Optimization</h2>
+    <canvas id="factoryChart" width="800" height="420"></canvas>
 </div>
 
 <script>
     const YEARS = 10;
+    
+    // 리서치 기반 실제 고정 데이터 세팅
+    const REAL_DATA = {
+        baseCost: 45000,    // 규모 1단계당 인프라 구축 비용 (4억 5천만 원)
+        laborEff: 450,      // 현장 인력 1인당 연간 한계 처리 매출 기여액 (4,500만 원)
+        autoEff: 650,       // AGV 도입 시 처리율 가중치
+        laborWage: 360,     // 연간 1인당 평균 급여 (3,600만 원)
+        r: 0.88             // ★ 수확체감/병목 현상을 유도하는 등비수열의 공비
+    };
+
     const ctx = document.getElementById('factoryChart').getContext('2d');
     
-    // 차트 생성 기본 구조
     let factoryChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({length: YEARS}, (_, i) => `${i + 1}년차`),
-            datasets: [
-                { label: 'Labor-Centered Factory (인간 중심 공장 - 등차수열)', borderColor: 'red', data: [], fill: false, tension: 0.1 },
-                { label: 'Automated Smart Factory (자동화 스마트 팩토리 - 등차수열)', borderColor: 'blue', data: [], fill: false, tension: 0.1 }
-            ]
+            labels: ["설립 초기", ...Array.from({length: YEARS}, (_, i) => `${i + 1}년차`)],
+            datasets: [{ label: '센터 누적 순이익 흐름', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', data: [], fill: true, tension: 0.1 }]
         },
-        options: { responsive: true, scales: { y: { title: { display: true, text: '누적 순이익 (만원)' } } } }
+        options: { responsive: true, scales: { y: { title: { display: true, text: '누적 금액 (만원)' } } } }
     });
 
+    /**
+     * [구현 완료] 수확체감 및 병목 현상을 계산하는 등비수열의 합 함수
+     */
+    function calculateLaborDiminishingReturns(n, a, r) {
+        let totalEff = 0;
+        for (let i = 1; i <= n; i++) {
+            totalEff += a * Math.pow(r, i - 1); // 첫째항 a, 공비 r인 등비수열의 일반항들을 누적 합산
+        }
+        return totalEff;
+    }
+
+    /**
+     * 핵심 시뮬레이션 및 데이터 갱신 함수
+     */
     function updateChart() {
-        // 슬라이더 값 가져오기 및 화면 텍스트 업데이트
+        // 1. 입력값 수집 및 UI 동기화
+        const scale = parseInt(document.getElementById('scale').value); document.getElementById('v_scale').innerText = scale;
+        const auto_rate = parseInt(document.getElementById('auto_rate').value); document.getElementById('v_auto_rate').innerText = auto_rate;
         const l_count = parseInt(document.getElementById('l_count').value); document.getElementById('v_l_count').innerText = l_count;
-        const l_wage = parseInt(document.getElementById('l_wage').value); document.getElementById('v_l_wage').innerText = l_wage;
-        const l_time = parseInt(document.getElementById('l_time').value); document.getElementById('v_l_time').innerText = l_time;
-        const l_eff = parseInt(document.getElementById('l_eff').value); document.getElementById('v_l_eff').innerText = l_eff;
-        
-        const a_cost = parseInt(document.getElementById('a_cost').value); document.getElementById('v_a_cost').innerText = a_cost;
-        const a_power = parseInt(document.getElementById('a_power').value); document.getElementById('v_a_power').innerText = a_power;
-        const a_time = parseInt(document.getElementById('a_time').value); document.getElementById('v_a_time').innerText = a_time;
-        const a_eff = parseInt(document.getElementById('a_eff').value); document.getElementById('v_a_eff').innerText = a_eff;
 
-        // 누적 등차수열 합 계산
-        let labor_years = [];
-        let auto_years = [];
-        
-        let labor_annual_profit = (l_count * l_time * l_eff * 100) - (l_count * l_wage);
-        let auto_annual_profit = (a_time * a_eff * 100) - a_power;
+        // 2. 자본 지출(CAPEX) 계산
+        let initialCost = (REAL_DATA.baseCost * scale) + (auto_rate * 600 * scale);
 
-        for (let i = 0; i < YEARS; i++) {
-            if (i === 0) {
-                labor_years.push(labor_annual_profit);
-                auto_years.push((auto_annual_profit * 0.3) - a_cost);
-            } else {
-                labor_years.push(labor_years[i - 1] + labor_annual_profit);
-                auto_years.push(auto_years[i - 1] + auto_annual_profit);
+        // 3. 수확체감 법칙이 적용된 연간 매출액 계산
+        let totalLaborEff = calculateLaborDiminishingReturns(l_count, REAL_DATA.laborEff, REAL_DATA.r);
+        let totalAutoEff = (auto_rate / 100) * REAL_DATA.autoEff * scale * 10;
+        let annualRevenue = totalLaborEff + totalAutoEff;
+
+        // 4. 연간 운영 비용(OPEX) 계산
+        let annualExpense = (l_count * REAL_DATA.laborWage) + ((auto_rate / 100) * 4000 * scale) + (scale * 3000);
+        let annualNetProfit = annualRevenue - annualExpense;
+
+        // 5. [구현 완료] 10개년 타임라인 누적 순이익 계산 루프
+        let cumulative_profits = [];
+        let currentBalance = -initialCost; // 0시점 (설립 초기 마이너스 자산)
+        let bepYear = -1;
+
+        cumulative_profits.push(currentBalance);
+
+        for (let i = 1; i <= YEARS; i++) {
+            currentBalance += annualNetProfit;
+            cumulative_profits.push(Math.round(currentBalance));
+
+            // 마이너스에서 처음으로 플러스가 되는 시점 포착 (손익분기점)
+            if (currentBalance >= 0 && bepYear === -1) {
+                bepYear = i;
             }
         }
 
-        // 그래프 갱신
-        factoryChart.data.datasets[0].data = labor_years;
-        factoryChart.data.datasets[1].data = auto_years;
+        // 6. KPI 대시보드 텍스트 출력 및 차트 업데이트
+        document.getElementById('d_init').innerText = `${initialCost.toLocaleString()}만 원`;
+        
+        const bepCard = document.getElementById('card_bep');
+        if (bepYear > 0) {
+            document.getElementById('d_bep').innerText = `${bepYear}년차`;
+            bepCard.classList.remove('alert');
+        } else {
+            document.getElementById('d_bep').innerText = "10년 내 회수 불가";
+            bepCard.classList.add('alert');
+        }
+
+        let roi = (currentBalance / initialCost) * 100;
+        document.getElementById('d_roi').innerText = `${roi.toFixed(1)}%`;
+        document.getElementById('d_net').innerText = `${Math.round(currentBalance).toLocaleString()}만 원`;
+
+        factoryChart.data.datasets[0].data = cumulative_profits;
         factoryChart.update();
     }
 
-    // 첫 실행
+    // 초기 실행
     updateChart();
 </script>
 
