@@ -5,22 +5,128 @@
     <title>이커머스 풀필먼트 SCM 최적화 시뮬레이터</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; display: flex; gap: 30px; background-color: #f8fafc; }
-        .control-panel { width: 35%; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .chart-panel { width: 62%; }
-        h3 { margin-top: 0; color: #1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-        .slider-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        input[type=range] { width: 100%; }
-        .val-display { float: right; color: #2563eb; font-weight: bold; }
+        body { 
+            font-family: 'Malgun Gothic', sans-serif; 
+            margin: 20px; 
+            display: flex; 
+            gap: 30px; 
+            background-color: #f8fafc; 
+        }
+        .control-panel { 
+            width: 35%; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            height: fit-content;
+        }
+        .chart-panel { 
+            width: 62%; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h3 { 
+            margin-top: 0; 
+            color: #1e3a8a; 
+            border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 8px; 
+        }
+        .slider-group { 
+            margin-bottom: 15px; 
+        }
+        label { 
+            display: block; 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+            font-size: 14px; 
+        }
+        input[type=range] { 
+            width: 100%; 
+        }
+        .val-display { 
+            float: right; 
+            color: #2563eb; 
+            font-weight: bold; 
+        }
+        .dashboard { 
+            display: flex; 
+            gap: 10px; 
+        }
+        .card { 
+            flex: 1; 
+            background: #eff6ff; 
+            padding: 12px; 
+            border-radius: 8px; 
+            text-align: center; 
+            border: 1px solid #bfdbfe; 
+        }
+        .card h4 { 
+            margin: 0 0 5px 0; 
+            font-size: 12px; 
+            color: #1e40af; 
+        }
+        .card p { 
+            margin: 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #1d4ed8; 
+        }
+        .card.alert { 
+            background: #fff1f2; 
+            border-color: #fecdd3; 
+        }
+        .card.alert h4 { 
+            color: #9f1239; 
+        }
+        .card.alert p { 
+            color: #b91c1c; 
+        }
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
         
-        .dashboard { display: flex; gap: 10px; margin-bottom: 20px; }
-        .card { flex: 1; background: #eff6ff; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #bfdbfe; }
-        .card h4 { margin: 0 0 5px 0; font-size: 12px; color: #1e40af; }
-        .card p { margin: 0; font-size: 16px; font-weight: bold; color: #1d4ed8; }
-        .card.alert { background: #fff1f2; border-color: #fecdd3; }
-        .card.alert h4 { color: #9f1239; }
-        .card.alert p { color: #b91c1c; }
+        /* [플러스 알파] 수식 디스플레이 패널 스타일 */
+        .formula-panel {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+        }
+        .formula-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #334155;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .formula-box {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 20px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .formula-desc {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.5;
+        }
+        .highlight {
+            color: #2563eb;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -46,55 +152,97 @@
 
 <div class="chart-panel">
     <div class="dashboard">
-        <div class="card"><h4>초기 설립 비용 (CAPEX)</h4><p id="d_init">0만 원</p></div>
-        <div class="card" id="card_bep"><h4>손익분기점 (BEP)</h4><p id="d_bep">-</p></div>
-        <div class="card"><h4>투자 수익률 (ROI)</h4><p id="d_roi">0%</p></div>
-        <div class="card"><h4>최종 누적 순이익</h4><p id="d_net">0만 원</p></div>
+        <div class="card">
+            <h4>초기 설립 비용 (CAPEX)</h4>
+            <p id="d_init">0만 원</p>
+        </div>
+        <div class="card" id="card_bep">
+            <h4>손익분기점 (BEP)</h4>
+            <p id="d_bep">-</p>
+        </div>
+        <div class="card">
+            <h4>투자 수익률 (ROI)</h4>
+            <p id="d_roi">0%</p>
+        </div>
+        <div class="card">
+            <h4>최종 누적 순이익</h4>
+            <p id="d_net">0만 원</p>
+        </div>
     </div>
 
-    <h2>Ecommerce Fulfillment Center SCM Optimization</h2>
-    <canvas id="factoryChart" width="800" height="420"></canvas>
+    <div class="chart-box">
+        <h2>Ecommerce Fulfillment Center SCM Optimization</h2>
+        <canvas id="factoryChart" width="800" height="320"></canvas>
+    </div>
+
+    <div class="formula-panel">
+        <div class="formula-title">🧮 생산성 최적화 수리적 모델링 (수학I 수열 연계)</div>
+        <div class="formula-box" id="formula_display">
+            Total Labor Efficiency = ∑_{i=1}^{10} 450 × 0.88^{i-1}
+        </div>
+        <div class="formula-desc">
+            물류 센터 내 현장 인력 증가에 따른 동선 마찰 및 병목 현상(Bottleneck)을 
+            <b>첫째항 $a = 450$</b>, <b>공비 $r = 0.88$</b>인 <span class="highlight">등비수열의 합 모델</span>로 구축하였습니다.<br>
+            현재 설정된 투입 인력 <span id="f_count" class="highlight">10</span>명 기준, 수확체감 법칙이 적용된 총 인력 효율의 수리적 합산값은 
+            <span id="f_result" class="highlight">0</span>만 원입니다. (무작위 선형 증가가 아닌 한계성 수렴 곡선 추종)
+        </div>
+    </div>
 </div>
 
 <script>
     const YEARS = 10;
     
-    // 리서치 기반 실제 고정 데이터 세팅
+    // 리서치 기반 실제 고정 데이터 세팅 (단위: 만 원)
     const REAL_DATA = {
         baseCost: 45000,    // 규모 1단계당 인프라 구축 비용 (4억 5천만 원)
         laborEff: 450,      // 현장 인력 1인당 연간 한계 처리 매출 기여액 (4,500만 원)
         autoEff: 650,       // AGV 도입 시 처리율 가중치
         laborWage: 360,     // 연간 1인당 평균 급여 (3,600만 원)
-        r: 0.88             // ★ 수확체감/병목 현상을 유도하는 등비수열의 공비
+        r: 0.88             // ★ 수확체감/병목 현상을 유도하는 등비수열의 공비 (0.88)
     };
 
     const ctx = document.getElementById('factoryChart').getContext('2d');
     
+    // 차트 초기화
     let factoryChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: ["설립 초기", ...Array.from({length: YEARS}, (_, i) => `${i + 1}년차`)],
-            datasets: [{ label: '센터 누적 순이익 흐름', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', data: [], fill: true, tension: 0.1 }]
+            datasets: [{ 
+                label: '센터 누적 순이익 흐름', 
+                borderColor: '#2563eb', 
+                backgroundColor: 'rgba(37, 99, 235, 0.05)', 
+                data: [], 
+                fill: true, 
+                tension: 0.1 
+            }]
         },
-        options: { responsive: true, scales: { y: { title: { display: true, text: '누적 금액 (만원)' } } } }
+        options: { 
+            responsive: true, 
+            scales: { 
+                y: { 
+                    title: { display: true, text: '누적 금액 (만원)' } 
+                } 
+            } 
+        }
     });
 
     /**
-     * [구현 완료] 수확체감 및 병목 현상을 계산하는 등비수열의 합 함수
+     * 수확체감 및 동선 병목 현상을 계산하는 등비수열의 합 함수
      */
     function calculateLaborDiminishingReturns(n, a, r) {
         let totalEff = 0;
         for (let i = 1; i <= n; i++) {
-            totalEff += a * Math.pow(r, i - 1); // 첫째항 a, 공비 r인 등비수열의 일반항들을 누적 합산
+            totalEff += a * Math.pow(r, i - 1); // 첫째항 a, 공비 r인 등비수열의 합 모델링
         }
         return totalEff;
     }
 
     /**
-     * 핵심 시뮬레이션 및 데이터 갱신 함수
+     * 슬라이더 입력 시 자원 배분 시뮬레이션을 돌리고 그래프를 갱신하는 함수
      */
     function updateChart() {
-        // 1. 입력값 수집 및 UI 동기화
+        // 1. 입력값 수집 및 UI 텍스트 동기화
         const scale = parseInt(document.getElementById('scale').value); document.getElementById('v_scale').innerText = scale;
         const auto_rate = parseInt(document.getElementById('auto_rate').value); document.getElementById('v_auto_rate').innerText = auto_rate;
         const l_count = parseInt(document.getElementById('l_count').value); document.getElementById('v_l_count').innerText = l_count;
@@ -107,13 +255,18 @@
         let totalAutoEff = (auto_rate / 100) * REAL_DATA.autoEff * scale * 10;
         let annualRevenue = totalLaborEff + totalAutoEff;
 
-        // 4. 연간 운영 비용(OPEX) 계산
+        // 4. [플러스 알파] 동적 수식 및 설명판 텍스트 업데이트
+        document.getElementById('formula_display').innerHTML = `Total Labor Efficiency = &sum;_{i=1}^{${l_count}} 450 &times; 0.88^{i-1}`;
+        document.getElementById('f_count').innerText = l_count;
+        document.getElementById('f_result').innerText = Math.round(totalLaborEff).toLocaleString();
+
+        // 5. 연간 운영 비용(OPEX) 계산
         let annualExpense = (l_count * REAL_DATA.laborWage) + ((auto_rate / 100) * 4000 * scale) + (scale * 3000);
         let annualNetProfit = annualRevenue - annualExpense;
 
-        // 5. [구현 완료] 10개년 타임라인 누적 순이익 계산 루프
+        // 6. 10개년 타임라인 누적 순이익 계산
         let cumulative_profits = [];
-        let currentBalance = -initialCost; // 0시점 (설립 초기 마이너스 자산)
+        let currentBalance = -initialCost; // 0시점 (설립 초기 투자로 인한 마이너스 자산)
         let bepYear = -1;
 
         cumulative_profits.push(currentBalance);
@@ -122,13 +275,13 @@
             currentBalance += annualNetProfit;
             cumulative_profits.push(Math.round(currentBalance));
 
-            // 마이너스에서 처음으로 플러스가 되는 시점 포착 (손익분기점)
+            // 최초로 흑자 전환하는 해(BEP) 포착
             if (currentBalance >= 0 && bepYear === -1) {
                 bepYear = i;
             }
         }
 
-        // 6. KPI 대시보드 텍스트 출력 및 차트 업데이트
+        // 7. KPI 대시보드 수치 매핑 및 예외 처리
         document.getElementById('d_init').innerText = `${initialCost.toLocaleString()}만 원`;
         
         const bepCard = document.getElementById('card_bep');
@@ -137,18 +290,19 @@
             bepCard.classList.remove('alert');
         } else {
             document.getElementById('d_bep').innerText = "10년 내 회수 불가";
-            bepCard.classList.add('alert');
+            bepCard.classList.add('alert'); // 기간 내 회수 불가능할 시 빨간색 경고 스킨 적용
         }
 
         let roi = (currentBalance / initialCost) * 100;
         document.getElementById('d_roi').innerText = `${roi.toFixed(1)}%`;
         document.getElementById('d_net').innerText = `${Math.round(currentBalance).toLocaleString()}만 원`;
 
+        // 8. Chart.js 데이터셋 갱신
         factoryChart.data.datasets[0].data = cumulative_profits;
         factoryChart.update();
     }
 
-    // 초기 실행
+    // 초기 화면 로드 시 1회 자동 실행
     updateChart();
 </script>
 
