@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>스마트 자동차 조립 공장 SCM 최적화 시뮬레이터</title>
+    <title>스마트 자동차 조립 공장 수리 모델 분석기</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
@@ -64,39 +64,6 @@
             color: #0284c7; 
             font-weight: bold; 
         }
-        .dashboard { 
-            display: flex; 
-            gap: 10px; 
-        }
-        .card { 
-            flex: 1; 
-            background: #f0fdf4; 
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: center; 
-            border: 1px solid #bbf7d0; 
-        }
-        .card h4 { 
-            margin: 0 0 5px 0; 
-            font-size: 12px; 
-            color: #166534; 
-        }
-        .card p { 
-            margin: 0; 
-            font-size: 16px; 
-            font-weight: bold; 
-            color: #15803d; 
-        }
-        .card.alert { 
-            background: #fff1f2; 
-            border-color: #fecdd3; 
-        }
-        .card.alert h4 { 
-            color: #9f1239; 
-        }
-        .card.alert p { 
-            color: #b91c1c; 
-        }
         .chart-box {
             background: white;
             padding: 20px;
@@ -154,28 +121,9 @@
 </div>
 
 <div class="chart-panel">
-    <div class="dashboard">
-        <div class="card">
-            <h4>초기 투자 비용 (CAPEX)</h4>
-            <p id="d_init">0억 원</p>
-        </div>
-        <div class="card" id="card_bep">
-            <h4>손익분기점 (BEP)</h4>
-            <p id="d_bep">-</p>
-        </div>
-        <div class="card">
-            <h4>10년 투자 수익률 (ROI)</h4>
-            <p id="d_roi">0%</p>
-        </div>
-        <div class="card">
-            <h4>최종 누적 순이익</h4>
-            <p id="d_net">0억 원</p>
-        </div>
-    </div>
-
     <div class="chart-box">
-        <h2>Automotive Assembly Plant SCM Simulation</h2>
-        <canvas id="factoryChart" width="800" height="320"></canvas>
+        <h2>수리적 연계 지표 그래프 분석 (Mathematical Metrics)</h2>
+        <canvas id="factoryChart" width="800" height="380"></canvas>
     </div>
 
     <div class="formula-panel">
@@ -183,45 +131,76 @@
         <div class="formula-box" id="formula_display"></div>
         <div class="formula-desc">
             💡 <b>수리 모델 해석:</b><br>
-            • <b>[인력 생산성]</b> 직접 조립 작업자의 과도 고용 시 라인 혼잡도에 의한 한계수확체감 법칙을 반영하여, <b>공차가 음수인 등차수열의 합</b>($$d = -0.05$$)으로 시간당 차량 생산대수($$UPH_{Labor}$$)를 제한합니다.<br>
+            • <b>[인력 생산성]</b> 직접 조립 작업자의 과도 고용 시 라인 혼잡도에 의한 한계수확체감 법칙을 반영하여, <b>공차가 음수인 등차수열의 합</b>($d = -0.05$)으로 시간당 차량 생산대수($UPH_{Labor}$)를 제한합니다.<br>
             • <b>[자동화 생산성]</b> 산업용 다관절 로봇 확충에 따른 일정한 도구 효율 한계를 반영하여 <b>감소형 등차수열의 합</b> 모델로 가산됩니다.<br>
-            • <b>[대체 경제학]</b> 공정 자동화 단계($$j$$)가 상승할수록 노동자 1인당 발생하는 실질 위험 수당 및 유효 인건비 부담이 <b>등비수열 모델</b>($$r = 0.82$$)에 의해 기하급수적으로 상쇄(절감)됩니다.
+            • <b>[대체 경제학]</b> 공정 자동화 단계($j$)가 상승할수록 노동자 1인당 발생하는 실질 위험 수당 및 유효 인건비 부담이 <b>등비수열 모델</b>($r = 0.82$)에 의해 기하급수적으로 상쇄(절감)됩니다.
         </div>
     </div>
 </div>
 
 <script>
-    const YEARS = 10;
-    
-    // 현실적인 완성차 제조 SCM 데이터 (억원 단위 기반)
+    // 현실적인 완성차 제조 SCM 데이터
     const REAL_DATA = {
-        baseCost: 2500,          // 1개 라인 건설 및 설비 기본 비용 (2,500억 원)
-        laborFirstTerm: 12.0,    // 숙련공 50명 기준 단위 UPH(시간당 생산 대수) 기여도
-        laborCommonDiff: -0.05,  // 인력 밀집도 상승 시 발생하는 공정 간섭 패널티 (음의 공차)
+        laborFirstTerm: 12.0,    // 숙련공 50명 기준 단위 UPH 기여도
+        laborCommonDiff: -0.05,  // 인력 밀집도 상승 시 발생하는 공정 간섭 패널티
         autoFirstTerm: 18.0,     // 로봇 자동화 도입 초기 UPH 폭발적 상승력
         autoCommonDiff: -1.2,    // 로봇 간섭 및 정비 다운타임으로 인한 한계 체감 공차
-        laborWage: 0.95,         // 생산직 1인당 평균 연봉 (9,500만 원 = 0.95억 원)
-        replacementRate: 0.82    // 자동화 10% 증가 시 노동 비용 감소 비율 (등비수열 인자)
+        laborWage: 0.95,         // 생산직 1인당 평균 연봉 (0.95억 원)
+        replacementRate: 0.82    // 자동화 10% 증가 시 노동 비용 감소 비율
     };
 
     const ctx = document.getElementById('factoryChart').getContext('2d');
     
+    // x축을 자동화 단계(0% ~ 100%)로 설정하여 수식 그래프 시각화
     let factoryChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ["공장 준공", ...Array.from({length: YEARS}, (_, i) => `${i + 1}년차`)],
-            datasets: [{ 
-                label: '완성차 법인 누적 순이익 흐름', 
-                borderColor: '#0284c7', 
-                backgroundColor: 'rgba(2, 132, 199, 0.05)', 
-                data: [], 
-                fill: true, 
-                tension: 0.1 
-            }]
+            labels: Array.from({length: 11}, (_, i) => `${i * 10}%`),
+            datasets: [
+                { 
+                    label: '인력 UPH 기여도 (좌축)', 
+                    borderColor: '#e11d48', 
+                    backgroundColor: 'transparent',
+                    data: [], 
+                    yAxisID: 'y'
+                },
+                { 
+                    label: '로봇 UPH 기여도 (좌축)', 
+                    borderColor: '#2563eb', 
+                    backgroundColor: 'transparent',
+                    data: [], 
+                    yAxisID: 'y'
+                },
+                { 
+                    label: '1인당 실질 인건비 (우축, 억원)', 
+                    borderColor: '#16a34a', 
+                    backgroundColor: 'transparent',
+                    data: [], 
+                    yAxisID: 'y1'
+                }
+            ]
         },
         options: { 
             responsive: true, 
-            scales: { y: { title: { display: true, text: '누적 금액 (억 원)' } } } 
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: { 
+                y: { 
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'UPH 생산성 기여도 (대)' } 
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: '실질 인건비 (억원)' },
+                    grid: { drawOnChartArea: false } // 우측 축 그리드 중복 제거
+                }
+            } 
         }
     });
 
@@ -243,50 +222,37 @@
         document.getElementById("v_auto_rate").innerText = auto_rate;
         document.getElementById("v_l_count").innerText = l_count;
 
-        // 1. 초기 투자비용 (CAPEX) 현실화
-        const buildingCost = REAL_DATA.baseCost * scale; 
-        const automationCost = (auto_rate / 10) * 350 * scale; // 자동화 10%당 로봇 설비 350억원 가산
-        const initialCost = buildingCost + automationCost;
-
-        // 2. 등차수열 기반 UPH 생산량 계산
-        // 인원 단위를 50명 단위 블록으로 변환하여 등차수열 적용
+        // 슬라이더 값을 기반으로 한 현재 수식 변수 계산
         const laborBlock = Math.floor(l_count / 50);
-        const totalLaborEff = calculateArithmeticSum(laborBlock, REAL_DATA.laborFirstTerm, REAL_DATA.laborCommonDiff);
-
-        // 자동화 단계를 10% 단위로 등차수열 적용
         const autoStage = auto_rate / 10;
-        const totalAutoEff = calculateArithmeticSum(autoStage, REAL_DATA.autoFirstTerm, REAL_DATA.autoCommonDiff) * scale;
 
-        // 최종 공장 UPH (시간당 생산 대수)
-        const totalUPH = Math.max(10, (totalLaborEff * scale) + totalAutoEff);
-        
-        // 연간 생산량 계산 (일 16시간 가동, 연간 250일 조업)
-        const annualProduction = totalUPH * 16 * 250; 
+        // 그래프 데이터 배열 생성 (자동화율 0%부터 100%까지의 추이 계산)
+        let laborData = [];
+        let robotData = [];
+        let wageData = [];
 
-        // 3. 완성차 매출 계산 (차량 1대당 평균 인도 가격 3,800만 원, 영업이익률 약 9% 가정 -> 대당 순익 350만 원 = 0.035억 원)
-        const profitPerCar = 0.035;
-        const annualRevenue = annualProduction * profitPerCar;
+        for (let j = 0; j <= 10; j++) {
+            // 1. 인력 UPH 합산 계산
+            const lEff = calculateArithmeticSum(laborBlock, REAL_DATA.laborFirstTerm, REAL_DATA.laborCommonDiff) * scale;
+            laborData.push(parseFloat(lEff.toFixed(2)));
 
-        // 4. 고정비 및 고임금 노동비 연계 (등비수열 인자 융합)
-        const effectiveWage = REAL_DATA.laborWage * Math.pow(REAL_DATA.replacementRate, autoStage);
-        const totalLaborCost = (l_count * scale) * effectiveWage;
+            // 2. 로봇 UPH 합산 계산 (현재 j 단계 기준)
+            const rEff = calculateArithmeticSum(j, REAL_DATA.autoFirstTerm, REAL_DATA.autoCommonDiff) * scale;
+            robotData.push(parseFloat(rEff.toFixed(2)));
 
-        // 로봇 유지보수비 및 감가상각 공장 운영비
-        const maintenanceCost = auto_rate * 4.5 * scale; 
-        const facilityCost = scale * 120; // 라인당 연간 고정 유지비 120억 원
-        const annualExpense = totalLaborCost + maintenanceCost + facilityCost;
+            // 3. 1인당 실질 인건비 계산 (현재 j 단계 기준)
+            const wage = REAL_DATA.laborWage * Math.pow(REAL_DATA.replacementRate, j);
+            wageData.push(parseFloat(wage.toFixed(2)));
+        }
 
-        // 연간 순수익
-        const annualNetProfit = annualRevenue - annualExpense;
-
-        // 수식 렌더링 화면 업데이트
+        // 수식 렌더링 화면 업데이트 (현재 슬라이더 기준)
         const formulaElement = document.getElementById("formula_display");
         formulaElement.innerHTML = 
             "$$" +
             "\\begin{aligned}" +
-            "\\text{Labor UPH Contribution (음의 등차합)} &= \\sum_{i=1}^{" + laborBlock + "} \\left[ 12.0 + (i - 1) \\times (-0.05) \\right] \\times " + scale + " \\\\" +
-            "\\text{Robot UPH Contribution (감소형 등차합)} &= \\left( \\sum_{j=1}^{" + autoStage + "} \\left[ 18.0 + (j - 1) \\times (-1.2) \\right] \\right) \\times " + scale + " \\\\" +
-            "\\text{Real Wage per Capita (등비 수용 차감)} &= 0.95 \\times 0.82^{" + autoStage + "} \\text{ (억 원)}" +
+            "\\text{Labor UPH Contribution (음의 등차합)} &= \\sum_{i=1}^{" + laborBlock + "} \\left[ 12.0 + (i - 1) \\times (-0.05) \\right] \\times " + scale + " = " + laborData[autoStage] + " \\\\" +
+            "\\text{Robot UPH Contribution (감소형 등차합)} &= \\left( \\sum_{j=1}^{" + autoStage + "} \\left[ 18.0 + (j - 1) \\times (-1.2) \\right] \\right) \\times " + scale + " = " + robotData[autoStage] + " \\\\" +
+            "\\text{Real Wage per Capita (등비 수용 차감)} &= 0.95 \\times 0.82^{" + autoStage + "} = " + wageData[autoStage] + " \\text{ (억 원)}" +
             "\\end{aligned}" +
             "$$";
 
@@ -295,40 +261,10 @@
             MathJax.typesetPromise([formulaElement]);
         }
 
-        // 10개년 재무 시뮬레이션 계산
-        let cumulative_profits = [];
-        let currentBalance = -initialCost;
-        let bepYear = -1;
-
-        cumulative_profits.push(Math.round(currentBalance));
-
-        for (let year = 1; year <= YEARS; year++) {
-            currentBalance += annualNetProfit;
-            cumulative_profits.push(Math.round(currentBalance));
-
-            if (currentBalance >= 0 && bepYear === -1) {
-                bepYear = year;
-            }
-        }
-
-        // 대시보드 데이터 바인딩 (억 원 단위 표기)
-        document.getElementById("d_init").innerText = Math.round(initialCost).toLocaleString() + "억 원";
-
-        const bepCard = document.getElementById("card_bep");
-        if (bepYear !== -1) {
-            document.getElementById("d_bep").innerText = bepYear + "년차";
-            bepCard.classList.remove("alert");
-        } else {
-            document.getElementById("d_bep").innerText = "10년 내 투자회수 불가";
-            bepCard.classList.add("alert");
-        }
-
-        const roi = (currentBalance / initialCost) * 100;
-        document.getElementById("d_roi").innerText = roi.toFixed(1) + "%";
-        document.getElementById("d_net").innerText = Math.round(currentBalance).toLocaleString() + "억 원";
-
-        // 차트 업데이트
-        factoryChart.data.datasets[0].data = cumulative_profits;
+        // 차트 데이터 주입 및 업데이트
+        factoryChart.data.datasets[0].data = laborData;
+        factoryChart.data.datasets[1].data = robotData;
+        factoryChart.data.datasets[2].data = wageData;
         factoryChart.update();
     }
 
